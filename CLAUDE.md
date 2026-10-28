@@ -30,6 +30,7 @@ Settings (`scry/config.py`, env prefix `SCRY_`):
 - `SCRY_WATCH` switches the file watcher.
 - `SCRY_RESYNC_INTERVAL` is in seconds; 0 turns off the periodic resync.
 - `SCRY_HUB_DEGREE` and `SCRY_LINKS_LIMIT` tune link handling.
+- `SCRY_SYSTEM_CERTS` (default on): both entry points call `bootstrap.use_system_certs`, which runs `truststore.inject_into_ssl()`, so httpx (huggingface_hub) and requests trust the OS certificate store. This is for corporate TLS inspection. `create_app` doesn't call it, so tests never touch global SSL.
 - `bootstrap.load_settings` turns a `ValidationError` into one `scry: SCRY_<FIELD>: message` line on stderr and exits with code 2. Both entry points use it.
 - `SCRY_PUBLIC_URL` is the base of the note links in MCP results, as the user's browser reaches the server (for example behind a reverse proxy). It defaults to `http://<host>:<port>`.
 

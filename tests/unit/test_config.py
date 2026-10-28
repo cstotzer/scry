@@ -1,14 +1,15 @@
 from pathlib import Path
 
 import pytest
+import truststore
 
-from scry.bootstrap import load_settings
+from scry.bootstrap import load_settings, use_system_certs
 from scry.config import Settings, default_index_dir
 
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for var in ("SCRY_VAULT_DIR", "SCRY_INDEX_DIR", "SCRY_PORT"):
+    for var in ("SCRY_VAULT_DIR", "SCRY_INDEX_DIR", "SCRY_PORT", "SCRY_SYSTEM_CERTS"):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -64,3 +65,16 @@ def test_bad_values_name_the_variable(
     with pytest.raises(SystemExit):
         load_settings()
     assert capsys.readouterr().err.startswith("scry: SCRY_PORT: ")
+
+
+@pytest.mark.parametrize(("env", "injected"), [(None, True), ("false", False), ("true", True)])
+def test_system_certs_are_used_unless_switched_off(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, env: str | None, injected: bool
+) -> None:
+    monkeypatch.setenv("SCRY_VAULT_DIR", str(tmp_path))
+    if env is not None:
+        monkeypatch.setenv("SCRY_SYSTEM_CERTS", env)
+    calls: list[bool] = []
+    monkeypatch.setattr(truststore, "inject_into_ssl", lambda: calls.append(True))
+    use_system_certs(load_settings())
+    assert calls == ([True] if injected else [])

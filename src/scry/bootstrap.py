@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, NoReturn
 
 import anyio.to_thread
+import truststore
 import uvicorn
 from fastapi import FastAPI
 from pydantic import ValidationError
@@ -125,6 +126,12 @@ def load_settings(**overrides: Any) -> Settings:
         _config_error(exc)
 
 
+def use_system_certs(settings: Settings) -> None:
+    """Route all TLS (model downloads via httpx and requests) through the OS trust store."""
+    if settings.system_certs:
+        truststore.inject_into_ssl()
+
+
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(
         prog="scry-server", description="Serve an Obsidian vault: web UI and MCP endpoint."
@@ -139,6 +146,7 @@ def main(argv: list[str] | None = None) -> None:
     args = parser.parse_args(argv)
     given = {"vault_dir": args.vault, "port": args.port}
     settings = load_settings(**{k: v for k, v in given.items() if v is not None})
+    use_system_certs(settings)
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s: %(message)s")
     log.info("vault %s, index %s", settings.vault_dir.resolve(), settings.index_dir)
     uvicorn.run(create_app(settings), host=settings.host, port=settings.port)
@@ -146,4 +154,5 @@ def main(argv: list[str] | None = None) -> None:
 
 def cli_main() -> None:
     settings = load_settings()
+    use_system_certs(settings)
     sys.exit(cli.run(sys.argv[1:], lambda: open_services(settings)))

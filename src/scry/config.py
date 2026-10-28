@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # e.g. behind a reverse proxy. Defaults to http://<host>:<port>.
     public_url: str | None = None
     chunk_max_chars: int = 1500
+    # Verify TLS against the OS certificate store, which on corporate machines also holds the
+    # root of TLS-inspecting proxies; off falls back to certifi's bundle.
+    system_certs: bool = True
 
     @model_validator(mode="before")
     @classmethod

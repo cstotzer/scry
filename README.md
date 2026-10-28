@@ -132,8 +132,24 @@ All settings are environment variables with the `SCRY_` prefix. A wrong value st
 | `SCRY_CHUNK_MAX_CHARS` | `1500` | Maximum size of an indexed section. |
 | `SCRY_DENSE_MODEL` | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | Embedding model. After changing it, delete the index folder so that every note is embedded again. |
 | `SCRY_SPARSE_MODEL` | `Qdrant/bm25` | Keyword model. |
+| `SCRY_SYSTEM_CERTS` | `true` | Check HTTPS certificates against the operating system's certificate store instead of Python's bundled one. See [Corporate networks](#corporate-networks). |
 
 If your vault is on a network share, or on a Windows drive seen from WSL, file events may not arrive. Set `WATCHFILES_FORCE_POLLING=true` in that case.
+
+## Corporate networks
+
+Scry needs the network only once, to download the embedding models on first start. Company networks often get in the way.
+
+**TLS inspection.** Many company proxies decrypt HTTPS and re-sign it with the company's own root certificate. Python's bundled certificate list doesn't contain that certificate, so downloads fail with certificate errors. Scry therefore checks certificates against your operating system's certificate store, where IT installs the company certificate, the same store your browser uses. This works without any configuration. Setting `REQUESTS_CA_BUNDLE` doesn't help here, because the model download uses `httpx`, which ignores it. If you do point Python at a certificate file, use `SSL_CERT_FILE`, and write the path without quotes: a quoted path makes Windows fail with `[Errno 22] Invalid argument`. To turn the system store off, for example on a minimal Linux install without one, set `SCRY_SYSTEM_CERTS=false`.
+
+**Redirected home folders.** If your home folder lives on OneDrive or a network share, file locking and renaming during the download can fail. Keep the models and the index on a local disk:
+
+```powershell
+$env:SCRY_MODEL_CACHE = "C:\scry\models"
+$env:SCRY_INDEX_DIR = "C:\scry\index"
+```
+
+**Blocked downloads.** If the proxy blocks Hugging Face entirely, copy the models folder from a machine where the download worked. Scry only reads it, so a copied folder works offline.
 
 ## Command line
 
