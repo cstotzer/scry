@@ -14,8 +14,9 @@ from scry.domain import DocumentId, DocumentNotFound, InvalidDocumentId
 _HERE = Path(__file__).parent
 
 
-def build_web_router(services: Services, links_limit: int) -> APIRouter:
-    templates = Jinja2Templates(directory=_HERE / "templates")
+def build_web_router(services: Services, links_limit: int, title: str | None = None) -> APIRouter:
+    site = {"site_title": title}
+    templates = Jinja2Templates(directory=_HERE / "templates", context_processors=[lambda _: site])
     router = APIRouter()
 
     @router.get("/", response_class=HTMLResponse)
@@ -76,6 +77,8 @@ def build_web_router(services: Services, links_limit: int) -> APIRouter:
     return router
 
 
-def mount_web(app: FastAPI, services: Services, links_limit: int = 10) -> None:
+def mount_web(
+    app: FastAPI, services: Services, links_limit: int = 10, title: str | None = None
+) -> None:
     app.mount("/static", StaticFiles(directory=_HERE / "static"), name="static")
-    app.include_router(build_web_router(services, links_limit))
+    app.include_router(build_web_router(services, links_limit, title))

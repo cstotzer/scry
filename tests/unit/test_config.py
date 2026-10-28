@@ -9,7 +9,14 @@ from scry.config import Settings, default_index_dir
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for var in ("SCRY_VAULT_DIR", "SCRY_INDEX_DIR", "SCRY_PORT", "SCRY_SYSTEM_CERTS"):
+    for var in (
+        "SCRY_VAULT_DIR",
+        "SCRY_INDEX_DIR",
+        "SCRY_PORT",
+        "SCRY_SYSTEM_CERTS",
+        "SCRY_TITLE",
+        "SCRY_EXCLUDE",
+    ):
         monkeypatch.delenv(var, raising=False)
 
 
@@ -64,7 +71,7 @@ def test_bad_values_name_the_variable(
     monkeypatch.setenv("SCRY_PORT", "abc")
     with pytest.raises(SystemExit):
         load_settings()
-    assert capsys.readouterr().err.startswith("scry: SCRY_PORT: ")
+    assert capsys.readouterr().err.startswith("scry: SCRY_PORT or port in .scry.toml: ")
 
 
 @pytest.mark.parametrize(("env", "injected"), [(None, True), ("false", False), ("true", True)])
@@ -78,3 +85,49 @@ def test_system_certs_are_used_unless_switched_off(
     monkeypatch.setattr(truststore, "inject_into_ssl", lambda: calls.append(True))
     use_system_certs(load_settings())
     assert calls == ([True] if injected else [])
+
+
+def test_the_vault_config_file_sets_defaults(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".obsidian").mkdir()
+    (tmp_path / ".scry.toml").write_text(
+        'title = "Work"\nport = 8081\nexclude = ["Templates", "Archive/**"]\n'
+    )
+    monkeypatch.chdir(tmp_path)
+    settings = load_settings()
+    assert (settings.title, settings.port) == ("Work", 8081)
+    assert settings.exclude == ["Templates", "Archive/**"]
+
+
+def test_variables_and_arguments_override_the_vault_config_file(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    (tmp_path / ".scry.toml").write_text('title = "Work"\nport = 8081\nexclude = "A, B"\n')
+    monkeypatch.setenv("SCRY_VAULT_DIR", str(tmp_path))
+    monkeypatch.setenv("SCRY_TITLE", "Home")
+    settings = load_settings(port=9000)
+    assert (settings.title, settings.port, settings.exclude) == ("Home", 9000, ["A", "B"])
+
+
+@pytest.mark.parametrize(
+    ("content", "message"),
+    [
+        ("tittle = 1\n", "unknown setting(s) tittle"),
+        ("index_dir = '/x'\n", "unknown setting(s) index_dir"),
+        ("title = \n", ".scry.toml: "),
+    ],
+)
+def test_a_broken_vault_config_file_is_reported(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+    content: str,
+    message: str,
+) -> None:
+    (tmp_path / ".scry.toml").write_text(content)
+    monkeypatch.setenv("SCRY_VAULT_DIR", str(tmp_path))
+    with pytest.raises(SystemExit):
+        load_settings()
+    err = capsys.readouterr().err
+    assert err.startswith("scry: ") and message in err

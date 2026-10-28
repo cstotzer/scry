@@ -115,7 +115,7 @@ Links in results start with `http://<host>:<port>` by default. If you open the w
 
 ## Configuration
 
-All settings are environment variables with the `SCRY_` prefix. A wrong value stops Scry with a one-line message naming the variable.
+All settings are environment variables with the `SCRY_` prefix. The most common ones can also be kept in a [vault config file](#vault-config-file). A wrong value stops Scry with a one-line message naming the setting.
 
 | Variable | Default | Meaning |
 |---|---|---|
@@ -127,12 +127,27 @@ All settings are environment variables with the `SCRY_` prefix. A wrong value st
 | `SCRY_PUBLIC_URL` | `http://<host>:<port>` | Base of the citation links in MCP results. |
 | `SCRY_WATCH` | `true` | Watch the vault for changes. |
 | `SCRY_RESYNC_INTERVAL` | `600` | Seconds between safety resyncs; `0` turns them off. |
+| `SCRY_TITLE` | *(none)* | Shown next to the name in the web UI's header and browser tab, as **Scry** \| Work. Useful to tell vaults apart. |
 | `SCRY_HUB_DEGREE` | `30` | Notes with at least this many linked neighbours count as hubs. |
 | `SCRY_LINKS_LIMIT` | `10` | Default number of links returned per list (outgoing links and backlinks). |
 | `SCRY_CHUNK_MAX_CHARS` | `1500` | Maximum size of an indexed section. |
 | `SCRY_DENSE_MODEL` | `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` | Embedding model. After changing it, delete the index folder so that every note is embedded again. |
 | `SCRY_SPARSE_MODEL` | `Qdrant/bm25` | Keyword model. |
 | `SCRY_SYSTEM_CERTS` | `true` | Check HTTPS certificates against the operating system's certificate store instead of Python's bundled one. See [Corporate networks](#corporate-networks). |
+
+### Vault config file
+
+A `.scry.toml` file in the vault's root folder holds the settings that belong to the vault rather than to the machine. Obsidian ignores hidden files, so it won't show up among your notes. Keys are the setting names without the `SCRY_` prefix, in lowercase:
+
+```toml
+title = "Work"
+port = 8081
+exclude = ["Templates", "Archive/**"]
+```
+
+Allowed keys: `title`, `exclude`, `port`, `host`, `public_url`, `watch`, `resync_interval`, `hub_degree` and `links_limit`. Paths, models and `SYSTEM_CERTS` depend on the machine, so they stay in environment variables. An unknown key is reported, so typos don't go unnoticed.
+
+Command-line arguments override environment variables, and those override the file. Scry reads the file at startup; restart it after a change.
 
 If your vault is on a network share, or on a Windows drive seen from WSL, file events may not arrive. Set `WATCHFILES_FORCE_POLLING=true` in that case.
 

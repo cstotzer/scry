@@ -96,3 +96,16 @@ def test_resync_picks_up_changes(client: TestClient, settings: Settings) -> None
     resp = client.post("/status/resync", follow_redirects=False)
     assert resp.status_code == 303
     assert "3 documents indexed" in client.get("/status").text
+
+
+def test_custom_title(settings: Settings) -> None:
+    app = create_app(settings.model_copy(update={"title": "Work"}), FakeEmbedder())
+    with TestClient(app) as c:
+        page = c.get("/search").text
+    assert "<strong>Scry</strong> | Work</a>" in page
+    assert "<title>Search · Scry | Work</title>" in page
+
+
+def test_no_custom_title(client: TestClient) -> None:
+    page = client.get("/search").text
+    assert "<strong>Scry</strong></a>" in page and "<title>Search · Scry</title>" in page

@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Knowledge base{% endblock %} · Scry</title>
+  <title>{% block title %}Knowledge base{% endblock %} · Scry{% if site_title %} | {{ site_title }}{% endif %}</title>
   <link rel="stylesheet" href="{{ url_for('static', path='pico.min.css') }}">
   <style>
     .muted { color: var(--pico-muted-color); }
@@ -19,7 +19,7 @@
 <body>
   <header class="container">
     <nav>
-      <ul><li><a href="/"><strong>Scry</strong></a></li></ul>
+      <ul><li><a href="/"><strong>Scry</strong>{% if site_title %} | {{ site_title }}{% endif %}</a></li></ul>
       <ul>
         <li><a href="/">Documents</a></li>
         <li><a href="/search">Search</a></li>

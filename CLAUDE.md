@@ -30,6 +30,8 @@ Settings (`scry/config.py`, env prefix `SCRY_`):
 - `SCRY_WATCH` switches the file watcher.
 - `SCRY_RESYNC_INTERVAL` is in seconds; 0 turns off the periodic resync.
 - `SCRY_HUB_DEGREE` and `SCRY_LINKS_LIMIT` tune link handling.
+- **Vault config file:** `<vault>/.scry.toml` (`config.read_vault_config`) may set the keys in `VAULT_CONFIG_KEYS` (title, exclude, port, host, public_url, watch, resync_interval, hub_degree, links_limit). Unknown keys and broken TOML raise errors. It is merged in `_vault_defaults` once the vault is known, with the lowest priority (init arguments > `SCRY_*` > file). `exclude` is split by a field validator so it accepts a list or a comma-separated string from either source.
+- `SCRY_TITLE` is shown as **Scry** | title in the web header and `<title>`. It reaches every template through a Jinja2Templates `context_processor` in `build_web_router`.
 - `SCRY_SYSTEM_CERTS` (default on): both entry points call `bootstrap.use_system_certs`, which runs `truststore.inject_into_ssl()`, so httpx (huggingface_hub) and requests trust the OS certificate store. This is for corporate TLS inspection. `create_app` doesn't call it, so tests never touch global SSL.
 - `bootstrap.load_settings` turns a `ValidationError` into one `scry: SCRY_<FIELD>: message` line on stderr and exits with code 2. Both entry points use it.
 - `SCRY_PUBLIC_URL` is the base of the note links in MCP results, as the user's browser reaches the server (for example behind a reverse proxy). It defaults to `http://<host>:<port>`.

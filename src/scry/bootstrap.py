@@ -24,7 +24,7 @@ from scry.adapters.qdrant import QdrantEmbeddedIndex
 from scry.adapters.watcher import watch_vault
 from scry.adapters.web import mount_web, note_href
 from scry.app import GetDocument, GetLinks, Indexer, ListDocuments, Search, Services, SyncIndex
-from scry.config import Settings
+from scry.config import VAULT_CONFIG, VAULT_CONFIG_KEYS, Settings
 from scry.domain import MarkdownChunker
 from scry.ports import Embedder
 
@@ -106,7 +106,7 @@ def create_app(settings: Settings | None = None, embedder: Embedder | None = Non
     app.state.services = services
     # Add the MCP route itself (not a Mount) so the endpoint is exactly /mcp, without a redirect.
     app.router.routes.extend(mcp_app.routes)
-    mount_web(app, services, settings.links_limit)
+    mount_web(app, services, settings.links_limit, settings.title)
     return app
 
 
@@ -114,6 +114,8 @@ def _config_error(exc: ValidationError) -> NoReturn:
     for error in exc.errors():
         field = ".".join(map(str, error["loc"]))
         where = f"SCRY_{field.upper()}: " if field else ""
+        if field in VAULT_CONFIG_KEYS:
+            where = f"SCRY_{field.upper()} or {field} in {VAULT_CONFIG}: "
         print(f"scry: {where}{error['msg'].removeprefix('Value error, ')}", file=sys.stderr)
     sys.exit(2)
 
