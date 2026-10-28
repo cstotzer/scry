@@ -1,0 +1,19 @@
+{
+  "name": "scry",
+  "build": { "dockerfile": "Dockerfile" },
+  "remoteUser": "vscode",
+  "forwardPorts": [8080],
+  "runArgs": ["--add-host=host.docker.internal:host-gateway"],
+  "containerEnv": {
+    "UV_LINK_MODE": "copy",
+    "SCRY_VAULT_DIR": "${containerWorkspaceFolder}/data/knowledge",
+    "SCRY_INDEX_DIR": "${containerWorkspaceFolder}/data/index",
+    "SCRY_MODEL_CACHE": "${containerWorkspaceFolder}/data/models"
+  },
+  "postCreateCommand": "uv sync",
+  "customizations": {
+    "vscode": {
+      "extensions": ["charliermarsh.ruff", "ms-python.python", "ms-pyright.pyright"]
+    }
+  }
+}

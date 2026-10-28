@@ -1,0 +1,55 @@
+[importlinter]
+root_package = scry
+
+[importlinter:contract:domain-pure]
+name = Domain imports nothing else from scry
+type = forbidden
+source_modules = scry.domain
+forbidden_modules =
+    scry.ports
+    scry.app
+    scry.adapters
+    scry.bootstrap
+    scry.config
+
+[importlinter:contract:ports-deps]
+name = Ports depend only on domain
+type = forbidden
+source_modules = scry.ports
+forbidden_modules =
+    scry.app
+    scry.adapters
+    scry.bootstrap
+    scry.config
+
+[importlinter:contract:app-deps]
+name = App depends only on domain and ports
+type = forbidden
+source_modules = scry.app
+forbidden_modules =
+    scry.adapters
+    scry.bootstrap
+    scry.config
+
+[importlinter:contract:adapters-independent]
+name = Adapters do not import each other
+type = independence
+modules =
+    scry.adapters.mcp
+    scry.adapters.web
+    scry.adapters.cli
+    scry.adapters.filesystem
+    scry.adapters.qdrant
+    scry.adapters.fastembed
+    scry.adapters.frontmatter
+    scry.adapters.watcher
+
+[importlinter:contract:only-bootstrap-imports-adapters]
+name = Only bootstrap imports adapters
+type = forbidden
+source_modules =
+    scry.domain
+    scry.ports
+    scry.app
+    scry.config
+forbidden_modules = scry.adapters

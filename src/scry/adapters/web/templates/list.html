@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="/search" method="get" role="search">
+  <input type="search" name="q" placeholder="Search the vault" aria-label="Search">
+  <input type="submit" value="Search">
+</form>
+<p>
+  Tags:
+  <a href="/" {% if not tag %}aria-current="page"{% endif %}>all</a>
+  {% for t in all_tags %}· <a href="/?tag={{ t }}" {% if t == tag %}aria-current="page"{% endif %}>{{ t }}</a>{% endfor %}
+</p>
+{% if docs %}
+<div class="overflow-auto">
+<table class="striped">
+  <thead><tr><th>Title</th><th>Path</th><th>Tags</th></tr></thead>
+  <tbody>
+  {% for d in docs %}
+    <tr>
+      <td><a href="/notes/{{ d.id | urlencode }}">{{ d.title }}</a></td>
+      <td><code>{{ d.id }}</code></td>
+      <td>{% for t in d.tags %}<span class="tag">{{ t }}</span>{% endfor %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="muted">{% if syncing %}Indexing the vault…{% else %}No notes{% if tag %} tagged “{{ tag }}”{% endif %}.{% endif %}</p>
+{% endif %}
+{% endblock %}

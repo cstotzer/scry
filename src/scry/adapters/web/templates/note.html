@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ doc.meta.title }}{% endblock %}
+{% block content %}
+{% macro link_list(title, refs, total) %}
+<h4>{{ title }} ({{ total }})</h4>
+{% if refs %}
+<ul>
+  {% for r in refs %}
+  <li><a href="/notes/{{ r.doc_id | urlencode }}">{{ r.title }}</a>{% if r.hub %} <span class="tag">hub</span>{% endif %}</li>
+  {% endfor %}
+</ul>
+{% if refs | length < total %}<p class="muted">and {{ total - refs | length }} more</p>{% endif %}
+{% else %}<p class="muted">None.</p>{% endif %}
+{% endmacro %}
+<hgroup>
+  <h2>{{ doc.meta.title }}</h2>
+  <p><code>{{ doc.id }}</code> {% for t in doc.meta.tags %}<a class="tag" href="/?tag={{ t }}">{{ t }}</a>{% endfor %}</p>
+</hgroup>
+{% for w in doc.warnings %}<p class="warning">{{ w }}</p>{% endfor %}
+<div class="note-grid">
+  <article>{{ html | safe }}</article>
+  <aside>
+    {% if links %}
+    {{ link_list("Links", links.outgoing, links.total_outgoing) }}
+    {{ link_list("Backlinks", links.backlinks, links.total_backlinks) }}
+    {% if links.unresolved %}
+    <h4>Unresolved</h4>
+    <ul>{% for u in links.unresolved %}<li class="muted">{{ u }}</li>{% endfor %}</ul>
+    {% endif %}
+    {% else %}<p class="muted">Links appear after the next sync.</p>{% endif %}
+  </aside>
+</div>
+{% endblock %}
+{% block scripts %}
+{% if mermaid %}
+<script src="{{ url_for('static', path='mermaid.min.js') }}"></script>
+<script>
+  // Fenced ```mermaid blocks arrive as code; hand their source to mermaid as diagrams.
+  for (const code of document.querySelectorAll("pre > code.language-mermaid")) {
+    const div = document.createElement("div");
+    div.className = "mermaid";
+    div.textContent = code.textContent;
+    code.parentElement.replaceWith(div);
+  }
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: "strict",
+    theme: matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "default",
+  });
+  mermaid.run();
+</script>
+{% endif %}
+{% endblock %}

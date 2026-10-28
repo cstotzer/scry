@@ -1,0 +1,47 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+/data/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# uv
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Linting & type checking
+.ruff_cache/
+.mypy_cache/
+.pyright/
+
+# Development
+*.egg
+*.egg-info/
+.env
+.env.local
+
+# Import linter
+.import_linter_cache
+
+# macOS
+.DS_Store

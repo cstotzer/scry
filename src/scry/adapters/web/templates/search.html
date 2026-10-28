@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Search{% endblock %}
+{% block content %}
+<form action="/search" method="get" role="search">
+  <input type="search" name="q" value="{{ q }}" placeholder="Query" aria-label="Query">
+  <input name="tags" value="{{ tags }}" placeholder="tags (comma-separated)" aria-label="Tags">
+  <input type="submit" value="Search">
+</form>
+{% if q %}
+<p class="muted">{{ hits | length }} hits</p>
+{% for h in hits %}
+<article class="hit">
+  <header>
+    <a href="{{ note_href(h.doc_id, h.heading_path[-1] if h.heading_path else none) }}">{{ h.title }}</a>
+    {% if h.heading_path %}<span class="muted">› {{ h.heading_path | join(" › ") }}</span>{% endif %}
+    <small class="muted" style="float:right">score {{ "%.4f" | format(h.score) }} · <code>{{ h.doc_id }}</code></small>
+  </header>
+  <pre>{{ h.text }}</pre>
+</article>
+{% endfor %}
+{% endif %}
+{% endblock %}

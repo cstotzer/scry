@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Knowledge base{% endblock %} · Scry</title>
+  <link rel="stylesheet" href="{{ url_for('static', path='pico.min.css') }}">
+  <style>
+    .muted { color: var(--pico-muted-color); }
+    .tag { display: inline-block; font-size: .8em; padding: 0 .4em; margin-right: .2em;
+           border-radius: .3em; background: var(--pico-secondary-background); color: var(--pico-secondary-inverse); }
+    .warning { color: var(--pico-del-color); }
+    .hit pre { white-space: pre-wrap; }
+    .mermaid { overflow-x: auto; text-align: center; margin-bottom: var(--pico-spacing); }
+    .note-grid { display: grid; grid-template-columns: 3fr 1fr; gap: 1.5rem; }
+    @media (max-width: 900px) { .note-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <header class="container">
+    <nav>
+      <ul><li><a href="/"><strong>Scry</strong></a></li></ul>
+      <ul>
+        <li><a href="/">Documents</a></li>
+        <li><a href="/search">Search</a></li>
+        <li><a href="/status">Status</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

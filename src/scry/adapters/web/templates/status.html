@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Status{% endblock %}
+{% block content %}
+<h2>Index status</h2>
+<p>{{ stats.documents }} documents indexed, {{ stats.chunks }} chunks.{% if syncing %} <strong>Syncing…</strong>{% endif %}</p>
+<form action="/status/resync" method="post"><button type="submit">Resync</button></form>
+<h3>Last sync</h3>
+{% if report %}
+<ul>
+  <li>Added: {{ report.added | join(", ") or "–" }}</li>
+  <li>Updated: {{ report.updated | join(", ") or "–" }}</li>
+  <li>Removed: {{ report.removed | join(", ") or "–" }}</li>
+</ul>
+<h3>Warnings ({{ report.warnings | length }})</h3>
+{% for w in report.warnings %}
+<article class="warning">
+  <a href="/notes/{{ w.doc_id | urlencode }}"><code>{{ w.doc_id }}</code></a>
+  <ul>{% for m in w.messages %}<li>{{ m }}</li>{% endfor %}</ul>
+</article>
+{% else %}<p class="muted">None.</p>{% endfor %}
+{% else %}
+<p class="muted">No sync has completed yet.</p>
+{% endif %}
+{% endblock %}
