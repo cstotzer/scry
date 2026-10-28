@@ -23,7 +23,7 @@ from scry.adapters.frontmatter import FrontMatterParser
 from scry.adapters.mcp import build_mcp, transport_security
 from scry.adapters.qdrant import QdrantEmbeddedIndex
 from scry.adapters.watcher import watch_vault
-from scry.adapters.web import mount_web, note_href
+from scry.adapters.web import mount_web, note_href, note_sections
 from scry.app import GetDocument, GetLinks, Indexer, ListDocuments, Search, Services, SyncIndex
 from scry.config import VAULT_CONFIG, VAULT_CONFIG_KEYS, Settings
 from scry.domain import MarkdownChunker
@@ -64,7 +64,14 @@ def create_app(settings: Settings | None = None, embedder: Embedder | None = Non
     services_cm = open_services(settings, embedder)
     services = services_cm.__enter__()  # closed again in the lifespan
     base_url = (settings.public_url or f"http://{settings.host}:{settings.port}").rstrip("/")
-    mcp = build_mcp(services, lambda doc_id, heading: base_url + note_href(doc_id, heading))
+    mcp = build_mcp(
+        services,
+        lambda doc_id, heading: base_url + note_href(doc_id, heading),
+        lambda doc_id, body: [
+            (s.heading_path, base_url + s.href)
+            for s in note_sections(doc_id, body, services.sync.snapshot.resolver)
+        ],
+    )
     hosts = list(settings.allowed_hosts)
     if settings.public_url and (public_host := urlsplit(settings.public_url).hostname):
         hosts.append(public_host)

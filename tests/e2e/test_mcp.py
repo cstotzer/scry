@@ -63,6 +63,9 @@ async def test_mcp_tools(server_url: str, settings: Settings) -> None:
         assert "proxy01" in doc.structured_content["body"]
         assert doc.structured_content["outgoing_links"] == 1
         assert doc.structured_content["url"] == "https://scry.example/notes/net/proxy.md"
+        assert doc.structured_content["sections"] == [
+            {"heading_path": ["Docker"], "url": "https://scry.example/notes/net/proxy.md#docker"}
+        ]
 
         links = await client.call_tool("get_links", {"doc_id": "Daemon.md", "query": "proxy"})
         assert links.structured_content is not None

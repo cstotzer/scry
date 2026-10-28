@@ -1,7 +1,8 @@
 """Note body -> HTML, with links resolved like Obsidian and an id on every heading."""
 
 import re
-from urllib.parse import unquote, urlsplit
+from dataclasses import dataclass
+from urllib.parse import quote, unquote, urlsplit
 
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
@@ -13,7 +14,39 @@ _COMMENT = re.compile(r"%%.*?%%", re.DOTALL)
 _markdown = MarkdownIt("commonmark", {"html": False}).enable("table")
 
 
+@dataclass(frozen=True)
+class NoteSection:
+    """A heading of a note and the link to it on the note's page."""
+
+    heading_path: list[str]
+    href: str
+
+
 def render_note(doc_id: DocumentId, body: str, resolver: LinkResolver) -> str:
+    return _markdown.renderer.render(_parse(doc_id, body, resolver), _markdown.options, {})
+
+
+def note_sections(doc_id: DocumentId, body: str, resolver: LinkResolver) -> list[NoteSection]:
+    """Every heading with the exact anchor the page gives it, repeated headings included."""
+    sections: list[NoteSection] = []
+    stack: list[tuple[int, str]] = []
+    tokens = _parse(doc_id, body, resolver)
+    for i, token in enumerate(tokens):
+        if token.type != "heading_open":
+            continue
+        level = int(token.tag[1:])
+        text = "".join(
+            c.content for c in tokens[i + 1].children or [] if c.type in ("text", "code_inline")
+        ).strip()
+        while stack and stack[-1][0] >= level:
+            stack.pop()
+        stack.append((level, text))
+        href = f"{note_href(doc_id)}#{quote(str(token.attrGet('id')))}"
+        sections.append(NoteSection([t for _, t in stack], href))
+    return sections
+
+
+def _parse(doc_id: DocumentId, body: str, resolver: LinkResolver) -> list[Token]:
     generated: set[str] = set()  # hrefs written for wikilinks, already resolved
 
     def href(link: Link) -> str | None:
@@ -58,4 +91,4 @@ def render_note(doc_id: DocumentId, body: str, resolver: LinkResolver) -> str:
         for child in token.children or []:
             if child.type == "link_open":
                 resolve_markdown_link(child)
-    return _markdown.renderer.render(tokens, _markdown.options, {})
+    return tokens

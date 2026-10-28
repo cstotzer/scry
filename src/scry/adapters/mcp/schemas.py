@@ -10,6 +10,11 @@ class SearchResult(BaseModel):
     score: float
 
 
+class Section(BaseModel):
+    heading_path: list[str]
+    url: str
+
+
 class DocumentContent(BaseModel):
     doc_id: str
     url: str
@@ -18,6 +23,7 @@ class DocumentContent(BaseModel):
     aliases: list[str]
     summary: str | None
     body: str
+    sections: list[Section]
     outgoing_links: int
     backlinks: int
 

@@ -12,12 +12,15 @@ from scry.adapters.mcp.schemas import (
     NoteLinksResult,
     ReindexResult,
     SearchResult,
+    Section,
 )
 from scry.app import Services
 from scry.domain import DocumentId, LinkRef, ScryError
 
 # Browser URL of a note, pointing at a heading when given.
 type NoteUrl = Callable[[DocumentId, str | None], str]
+# (heading path, browser URL) of every heading in a note, given its id and Markdown body.
+type NoteSections = Callable[[DocumentId, str], list[tuple[list[str], str]]]
 
 INSTRUCTIONS = """\
 Personal knowledge base: an Obsidian vault of linked Markdown notes, in German and English. \
@@ -27,7 +30,8 @@ note links to details it does not contain, call `get_links` with the user's ques
 `query` and open the few most promising links (about 3), at most 2 hops from the search hit. \
 Notes marked `hub` link to many others (indexes, daily notes); open them only when nothing \
 more specific fits. Cite every note you use as a Markdown link to its `url`, which opens the \
-note in the user's browser at the matching section, e.g. [Proxy setup > Docker](url)."""
+note in the user's browser at the matching section (for a note read with `get_document`, use the \
+`url` of the entry in `sections` that holds the cited text), e.g. [Proxy setup > Docker](url)."""
 
 
 async def _run[T](fn: Callable[[], T]) -> T:
@@ -62,7 +66,7 @@ def transport_security(allowed_hosts: list[str]) -> TransportSecuritySettings:
     )
 
 
-def build_mcp(services: Services, note_url: NoteUrl) -> MCPServer:
+def build_mcp(services: Services, note_url: NoteUrl, note_sections: NoteSections) -> MCPServer:
     mcp = MCPServer(name="scry", title="Scry", instructions=INSTRUCTIONS)
 
     @mcp.tool(
@@ -88,7 +92,13 @@ def build_mcp(services: Services, note_url: NoteUrl) -> MCPServer:
             for h in hits
         ]
 
-    @mcp.tool(description="Return the full Markdown body and metadata of one document by doc_id.")
+    @mcp.tool(
+        description=(
+            "Return the full Markdown body and metadata of one document by doc_id, plus its "
+            "`sections`: every heading with its heading path and a `url` that opens the note at "
+            "that heading. Cite a section by that `url`."
+        )
+    )
     async def get_document(doc_id: str) -> DocumentContent:  # pyright: ignore[reportUnusedFunction]
         doc = await _run(lambda: services.get(DocumentId(doc_id)))
         graph = services.sync.snapshot.graph
@@ -100,6 +110,7 @@ def build_mcp(services: Services, note_url: NoteUrl) -> MCPServer:
             aliases=doc.meta.aliases,
             summary=doc.meta.summary,
             body=doc.body,
+            sections=[Section(heading_path=p, url=u) for p, u in note_sections(doc.id, doc.body)],
             outgoing_links=len(graph.outgoing(doc.id)),
             backlinks=len(graph.backlinks(doc.id)),
         )
