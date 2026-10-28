@@ -109,6 +109,16 @@ The server's MCP instructions tell agents to search first, read the full note wh
 
 [`.github/agents/scry.agent.md`](.github/agents/scry.agent.md) defines a GitHub Copilot custom agent. It answers only from your notes, keeps commands and config values exactly as written, and ends each answer with a list of linked sources. Pick **scry** in the Copilot Chat agent picker.
 
+### Your own agents
+
+`scry agent-template` prints a starting point for a Copilot agent that answers from your vault. It explains to the agent how to search, filter by tag, follow links and cite exact sections. You add what the vault contains:
+
+```bash
+scry agent-template -o .github/agents/work.agent.md
+```
+
+Then fill in the `{{PLACEHOLDERS}}`: the agent's name, the vault's content, languages, folder structure, tag conventions and hub notes. The command works anywhere, even outside a vault and while the server is running. Use `-o` rather than `>` on Windows, where PowerShell's `>` writes UTF-16. Add `--force` to overwrite an existing file.
+
 ### Citation links
 
 Links in results start with `http://<host>:<port>` by default. If you open the web UI under a different address, for example through a reverse proxy with HTTPS, set `SCRY_PUBLIC_URL` to that address so the links agents give you work in your browser.
@@ -175,6 +185,7 @@ Like the server, `scry` works on the vault in the current folder, or on `SCRY_VA
 scry sync                                     # update the index once
 scry search "restic backup" -k 5 -t homelab
 scry links "Homelab/NAS Backup.md" -q "restore"
+scry agent-template -o .github/agents/work.agent.md   # see "Your own agents"
 ```
 
 Only one process can hold the index. While `scry-server` is running, the CLI refuses to start (exit code 2). The server keeps the index in sync on its own.

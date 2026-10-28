@@ -1,6 +1,6 @@
 ---
 # Template for agents that answer from a vault served by Scry.
-# Copy it to .github/agents/<name>.agent.md and fill in every {{PLACEHOLDER}}.
+# Created with `scry agent-template -o .github/agents/<name>.agent.md`; fill in every {{PLACEHOLDER}}.
 # The sections marked VAULT-SPECIFIC describe your vault. Leave the technical sections
 # as they are unless Scry's tools change.
 name: {{AGENT_NAME}}

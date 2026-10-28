@@ -2,6 +2,8 @@ import argparse
 import sys
 from collections.abc import Callable
 from contextlib import AbstractContextManager
+from importlib.resources import files
+from pathlib import Path
 
 from scry.app import Services
 from scry.domain import DocumentId, LinkRef, ScryError
@@ -22,7 +24,33 @@ def _parser() -> argparse.ArgumentParser:
     links.add_argument("doc_id")
     links.add_argument("-q", "--query")
     links.add_argument("-n", "--limit", type=int, default=10)
+    template = sub.add_parser(
+        "agent-template",
+        help="print a starting point for a Copilot agent that answers from the vault",
+    )
+    template.add_argument(
+        "-o", "--output", type=Path, help="write it to this file (UTF-8) instead of printing it"
+    )
+    template.add_argument("-f", "--force", action="store_true", help="overwrite --output")
     return parser
+
+
+def agent_template() -> str:
+    return (files(__package__) / "agent-template.agent.md").read_text(encoding="utf-8")
+
+
+def _write_agent_template(output: Path | None, force: bool) -> int:
+    if output is None:
+        sys.stdout.write(agent_template())
+        return 0
+    if output.exists() and not force:
+        print(f"scry: {output} exists; use --force to overwrite it", file=sys.stderr)
+        return 1
+    output.parent.mkdir(parents=True, exist_ok=True)
+    # Explicit UTF-8: Windows PowerShell's `>` would write UTF-16.
+    output.write_text(agent_template(), encoding="utf-8")
+    print(f"wrote {output}; fill in its {{{{PLACEHOLDERS}}}}", file=sys.stderr)
+    return 0
 
 
 def _print_refs(label: str, refs: list[LinkRef], total: int) -> None:
@@ -34,6 +62,8 @@ def _print_refs(label: str, refs: list[LinkRef], total: int) -> None:
 
 def run(argv: list[str], open_services: OpenServices) -> int:
     args = _parser().parse_args(argv)
+    if args.command == "agent-template":  # needs neither a vault nor the index
+        return _write_agent_template(args.output, args.force)
     try:
         with open_services() as services:
             if args.command == "sync":

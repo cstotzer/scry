@@ -5,7 +5,7 @@ import logging
 import sys
 import threading
 from collections.abc import AsyncGenerator, Generator
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import AbstractContextManager, asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Any, NoReturn
 from urllib.parse import urlsplit
@@ -168,6 +168,10 @@ def main(argv: list[str] | None = None) -> None:
 
 
 def cli_main() -> None:
-    settings = load_settings()
-    use_system_certs(settings)
-    sys.exit(cli.run(sys.argv[1:], lambda: open_services(settings)))
+    def services() -> AbstractContextManager[Services]:
+        # Loaded only by commands that use the vault, so agent-template works anywhere.
+        settings = load_settings()
+        use_system_certs(settings)
+        return open_services(settings)
+
+    sys.exit(cli.run(sys.argv[1:], services))

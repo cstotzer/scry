@@ -14,6 +14,7 @@ uv run scry-server [vault] [-p N]  # web UI on 127.0.0.1:8080, MCP at :8080/mcp
 uv run scry sync                   # CLI; refuses to run (exit 2) while the server holds the index
 uv run scry search "<query>" [-k 8] [-t tag]
 uv run scry links <doc_id> [-q query] [-n 10]
+uv run scry agent-template [-o FILE] [--force]  # needs no vault; template is packaged in scry/adapters/cli/
 
 uv run pytest                    # default run excludes the `models` marker (no model downloads)
 uv run pytest -m models          # smoke test with the real fastembed models (~250 MB, cached in $SCRY_MODEL_CACHE or ~/.cache/scry-models)
@@ -50,7 +51,7 @@ The code is hexagonal, and the layers are enforced by import-linter:
 
 Code lives in one module per class or concern, for example `scry/app/sync_index.py`, `scry/ports/vector_index.py` and `scry/adapters/qdrant/index.py`. Each `__init__.py` only re-exports its package's public names; keep new code out of them.
 
-Use cases are bundled into `Services` (`scry/app/services.py`): `sync`, `search`, `get`, `links`, `list_documents` and `stats`. Inbound adapters (`web`, `mcp`, `cli`, `watcher`) receive `Services`; the watcher gets an `on_change` callback instead. The CLI gets an `open_services` factory injected instead of importing bootstrap, which is why the `scry` script points at `scry.bootstrap:cli_main`. `app.state.services` exposes the services to tests.
+Use cases are bundled into `Services` (`scry/app/services.py`): `sync`, `search`, `get`, `links`, `list_documents` and `stats`. Inbound adapters (`web`, `mcp`, `cli`, `watcher`) receive `Services`; the watcher gets an `on_change` callback instead. The CLI gets an `open_services` factory injected instead of importing bootstrap, which is why the `scry` script points at `scry.bootstrap:cli_main`. The factory also loads the settings, so `agent-template` (handled before it is called) works without a vault. The template itself is `scry/adapters/cli/agent-template.agent.md`, read with `importlib.resources`; keep its tool descriptions in step with the MCP tools. `app.state.services` exposes the services to tests.
 
 How the pieces work:
 - **`DocumentStore` is read-only** (`list_ids` / `read_raw`). It skips dot folders (`.obsidian`, `.trash`) and `SCRY_EXCLUDE`, and decodes with `errors="replace"`, so one bad file never stops a sync.
