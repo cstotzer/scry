@@ -16,6 +16,7 @@ def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
         "SCRY_SYSTEM_CERTS",
         "SCRY_TITLE",
         "SCRY_EXCLUDE",
+        "SCRY_ALLOWED_HOSTS",
     ):
         monkeypatch.delenv(var, raising=False)
 
@@ -131,3 +132,11 @@ def test_a_broken_vault_config_file_is_reported(
         load_settings()
     err = capsys.readouterr().err
     assert err.startswith("scry: ") and message in err
+
+
+def test_allowed_hosts_take_a_comma_separated_list(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SCRY_VAULT_DIR", str(tmp_path))
+    monkeypatch.setenv("SCRY_ALLOWED_HOSTS", "host.docker.internal, scry.lan")
+    assert load_settings().allowed_hosts == ["host.docker.internal", "scry.lan"]

@@ -18,6 +18,7 @@ VAULT_CONFIG_KEYS = frozenset(
         "port",
         "host",
         "public_url",
+        "allowed_hosts",
         "watch",
         "resync_interval",
         "hub_degree",
@@ -71,14 +72,17 @@ class Settings(BaseSettings):
     # Base of the note links in MCP results, as the user's browser reaches the server,
     # e.g. behind a reverse proxy. Defaults to http://<host>:<port>.
     public_url: str | None = None
+    # Extra Host names the MCP endpoint answers to (DNS-rebinding protection), e.g.
+    # "host.docker.internal". localhost and public_url's host are always allowed; "*" allows any.
+    allowed_hosts: Annotated[list[str], NoDecode] = []
     chunk_max_chars: int = 1500
     # Verify TLS against the OS certificate store, which on corporate machines also holds the
     # root of TLS-inspecting proxies; off falls back to certifi's bundle.
     system_certs: bool = True
 
-    @field_validator("exclude", mode="before")
+    @field_validator("exclude", "allowed_hosts", mode="before")
     @classmethod
-    def _split_exclude(cls, value: object) -> object:
+    def _split_list(cls, value: object) -> object:
         if isinstance(value, str):
             return [p.strip() for p in value.split(",") if p.strip()]
         return value

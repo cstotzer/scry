@@ -5,6 +5,7 @@ from collections.abc import Generator
 
 import pytest
 import uvicorn
+from fastapi.testclient import TestClient
 from mcp import Client
 
 from scry.bootstrap import create_app
@@ -78,3 +79,30 @@ async def test_mcp_tools(server_url: str, settings: Settings) -> None:
         listing = await client.call_tool("list_documents", {})
         assert listing.structured_content is not None
         assert [d["doc_id"] for d in listing.structured_content["result"]] == ["Daemon.md"]
+
+
+def _mcp_status(settings: Settings, host: str, origin: str | None = None) -> int:
+    headers = {"Host": host, "Content-Type": "application/json"}
+    if origin:
+        headers["Origin"] = origin
+    with TestClient(create_app(settings, FakeEmbedder())) as client:
+        return client.post("/mcp", headers=headers, content="{}").status_code
+
+
+@pytest.mark.parametrize(
+    ("update", "host", "origin", "allowed"),
+    [
+        ({}, "localhost:8080", None, True),
+        ({}, "host.docker.internal:8080", None, False),
+        ({"allowed_hosts": ["host.docker.internal"]}, "host.docker.internal:8080", None, True),
+        ({"allowed_hosts": ["host.docker.internal"]}, "evil.example", None, False),
+        ({"public_url": "https://scry.corp/"}, "scry.corp", "https://scry.corp", True),
+        ({"public_url": "https://scry.corp/"}, "scry.corp", "https://evil.example", False),
+        ({"allowed_hosts": ["*"]}, "anything:1234", None, True),
+    ],
+)
+def test_mcp_host_check(
+    settings: Settings, update: dict[str, object], host: str, origin: str | None, allowed: bool
+) -> None:
+    status = _mcp_status(settings.model_copy(update=update), host, origin)
+    assert (status not in (403, 421)) == allowed, status

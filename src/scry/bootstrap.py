@@ -8,6 +8,7 @@ from collections.abc import AsyncGenerator, Generator
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
 from typing import Any, NoReturn
+from urllib.parse import urlsplit
 
 import anyio.to_thread
 import truststore
@@ -19,7 +20,7 @@ from scry.adapters import cli
 from scry.adapters.fastembed import FastEmbedEmbedder
 from scry.adapters.filesystem import FilesystemDocumentStore
 from scry.adapters.frontmatter import FrontMatterParser
-from scry.adapters.mcp import build_mcp
+from scry.adapters.mcp import build_mcp, transport_security
 from scry.adapters.qdrant import QdrantEmbeddedIndex
 from scry.adapters.watcher import watch_vault
 from scry.adapters.web import mount_web, note_href
@@ -64,7 +65,12 @@ def create_app(settings: Settings | None = None, embedder: Embedder | None = Non
     services = services_cm.__enter__()  # closed again in the lifespan
     base_url = (settings.public_url or f"http://{settings.host}:{settings.port}").rstrip("/")
     mcp = build_mcp(services, lambda doc_id, heading: base_url + note_href(doc_id, heading))
-    mcp_app = mcp.streamable_http_app(streamable_http_path="/mcp")
+    hosts = list(settings.allowed_hosts)
+    if settings.public_url and (public_host := urlsplit(settings.public_url).hostname):
+        hosts.append(public_host)
+    mcp_app = mcp.streamable_http_app(
+        streamable_http_path="/mcp", transport_security=transport_security(hosts)
+    )
 
     async def sync() -> None:
         try:

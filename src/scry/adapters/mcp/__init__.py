@@ -1,3 +1,3 @@
-from scry.adapters.mcp.server import build_mcp
+from scry.adapters.mcp.server import build_mcp, transport_security
 
-__all__ = ["build_mcp"]
+__all__ = ["build_mcp", "transport_security"]

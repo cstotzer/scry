@@ -81,7 +81,7 @@ Invariants:
 - mcp 2.x renamed `FastMCP` to `mcp.server.mcpserver.MCPServer`, and `mcp.Client(url_or_server)` is the high-level client.
 - `bootstrap.create_app` **appends the MCP app's routes** to the FastAPI router, rather than using `app.mount("/mcp", ...)`. A mount would serve `/mcp/` and redirect `/mcp`, which MCP clients do not follow.
 - `mcp.session_manager.run()` must wrap the FastAPI lifespan.
-- MCP DNS-rebinding protection only allows `localhost` / `127.0.0.1` / `[::1]` Host headers. Reaching the server under another hostname needs `transport_security` set in `streamable_http_app`.
+- MCP DNS-rebinding protection checks the Host and Origin headers (421 / 403). `bootstrap.create_app` always passes `transport_security(hosts)` from `scry.adapters.mcp`. It allows localhost plus `SCRY_ALLOWED_HOSTS` plus `SCRY_PUBLIC_URL`'s host, each with and without a port, because behind a proxy on the default port the Host header has no port and mcp's `name:*` wildcard needs one. `*` disables the check.
 - Qdrant local mode supports prefetch + RRF fusion and `Modifier.IDF` for BM25, but ignores payload indexes. They are still created, with the warning suppressed, so that server mode works unchanged.
 - Renaming or deleting a folder only reports the folder path, so the watcher's filter also lets suffix-less paths through. The periodic resync catches anything the watcher misses.
 - In tests, the MCP e2e test runs uvicorn in a thread on a free port. Because the startup sync runs in the background, e2e tests call `tests.fakes.wait_for_sync(app.state.services)` first. `tests/fakes.py` has in-memory fakes for every port; `FakeEmbedder` uses hashed bag-of-words vectors, so keyword search behaves realistically.

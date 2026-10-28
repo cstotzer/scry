@@ -3,6 +3,7 @@ from collections.abc import Callable
 import anyio.to_thread
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
+from mcp.server.transport_security import TransportSecuritySettings
 
 from scry.adapters.mcp.schemas import (
     DocumentContent,
@@ -44,6 +45,20 @@ def _linked(ref: LinkRef, note_url: NoteUrl) -> LinkedNote:
         summary=ref.summary,
         mentions=ref.mentions,
         hub=ref.hub,
+    )
+
+
+def transport_security(allowed_hosts: list[str]) -> TransportSecuritySettings:
+    """DNS-rebinding protection: localhost plus `allowed_hosts`, with any port; `*` turns it off."""
+    if "*" in allowed_hosts:
+        return TransportSecuritySettings(enable_dns_rebinding_protection=False)
+    names = ["127.0.0.1", "localhost", "[::1]", *allowed_hosts]
+    return TransportSecuritySettings(
+        # Behind a proxy on the default port the Host header has no port, so allow both forms.
+        allowed_hosts=[h for n in names for h in (n, f"{n}:*")],
+        allowed_origins=[
+            f"{scheme}://{h}" for n in names for scheme in ("http", "https") for h in (n, f"{n}:*")
+        ],
     )
 
 

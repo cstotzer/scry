@@ -124,7 +124,8 @@ All settings are environment variables with the `SCRY_` prefix. The most common 
 | `SCRY_MODEL_CACHE` | `~/.scry/models` | Downloaded embedding models. |
 | `SCRY_EXCLUDE` | *(none)* | Comma-separated globs relative to the vault, for example `Templates,Archive/**/*.md`. A folder name excludes everything below it. |
 | `SCRY_HOST` / `SCRY_PORT` | `127.0.0.1` / `8080` | Where the server listens. `scry-server --port` overrides the port. |
-| `SCRY_PUBLIC_URL` | `http://<host>:<port>` | Base of the citation links in MCP results. |
+| `SCRY_PUBLIC_URL` | `http://<host>:<port>` | Base of the citation links in MCP results. Its host name is also allowed to reach the MCP endpoint. |
+| `SCRY_ALLOWED_HOSTS` | *(none)* | Extra host names the MCP endpoint answers to, comma-separated, for example `host.docker.internal`. See [Security](#security). |
 | `SCRY_WATCH` | `true` | Watch the vault for changes. |
 | `SCRY_RESYNC_INTERVAL` | `600` | Seconds between safety resyncs; `0` turns them off. |
 | `SCRY_TITLE` | *(none)* | Shown next to the name in the web UI's header and browser tab, as **Scry** \| Work. Useful to tell vaults apart. |
@@ -145,7 +146,7 @@ port = 8081
 exclude = ["Templates", "Archive/**"]
 ```
 
-Allowed keys: `title`, `exclude`, `port`, `host`, `public_url`, `watch`, `resync_interval`, `hub_degree` and `links_limit`. Paths, models and `SYSTEM_CERTS` depend on the machine, so they stay in environment variables. An unknown key is reported, so typos don't go unnoticed.
+Allowed keys: `title`, `exclude`, `port`, `host`, `public_url`, `allowed_hosts`, `watch`, `resync_interval`, `hub_degree` and `links_limit`. Paths, models and `SYSTEM_CERTS` depend on the machine, so they stay in environment variables. An unknown key is reported, so typos don't go unnoticed.
 
 Command-line arguments override environment variables, and those override the file. Scry reads the file at startup; restart it after a change.
 
@@ -182,7 +183,14 @@ Only one process can hold the index. While `scry-server` is running, the CLI ref
 
 Scry has **no authentication**. Anyone who can reach the port can read your whole vault and trigger a re-index. Keep the default `127.0.0.1` binding. If you need access from other machines, put Scry behind a proxy that authenticates, for example with basic auth, mTLS, Tailscale or Cloudflare Access.
 
-The MCP endpoint only accepts the host names `localhost`, `127.0.0.1` and `[::1]`, as protection against DNS rebinding. Reaching it under another name needs a change in `scry/bootstrap.py`.
+As protection against DNS rebinding, the MCP endpoint only answers requests addressed to `localhost`, `127.0.0.1` or `[::1]` (any port). Requests under any other name are rejected with `421 Invalid Host header`. To reach it under another name, add that name to `SCRY_ALLOWED_HOSTS`. For example, a client in a devcontainer connecting to a Scry running on the host machine needs `host.docker.internal`:
+
+```powershell
+$env:SCRY_ALLOWED_HOSTS = "host.docker.internal"
+$env:SCRY_HOST = "0.0.0.0"   # only if the container can't reach the host's 127.0.0.1
+```
+
+The host name in `SCRY_PUBLIC_URL` is allowed automatically. `*` turns the check off; only use that on a trusted network.
 
 ## Development
 
